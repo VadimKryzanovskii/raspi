@@ -1,30 +1,26 @@
-import RPi.GPIO as GPIO
+import pigpio
 import time
 
-# Настройка GPIO
-GPIO.setmode(GPIO.BCM)
-servo_pin = 17
-GPIO.setup(servo_pin, GPIO.OUT)
+# Подключение к pigpio
+pi = pigpio.pi()
 
-# Установка сигнала на выходе
-pwm = GPIO.PWM(servo_pin, 50)  # Частота 50 Гц для сервопривода
-pwm.start(0)  # Начальное значение
+# Настройка GPIO 18 для PWM
+servo_pin = 18
 
-# Функция для поворота сервопривода
 def set_angle(angle):
-    duty = 2 + (angle / 18)  # Перевод угла в значение скважности (duty cycle)
-    pwm.ChangeDutyCycle(duty)
-    time.sleep(0.5)
-    pwm.ChangeDutyCycle(0)  # Остановим сигнал для предотвращения шума
+    # Преобразование угла в значение широты импульса (500–2500 микросекунд)
+    pulsewidth = 500 + (angle / 180) * 2000
+    pi.set_servo_pulsewidth(servo_pin, pulsewidth)
 
-# Пример использования
 try:
-    set_angle(0)   # Позиция 0 градусов
-    time.sleep(1)
-    set_angle(90)  # Позиция 90 градусов
-    time.sleep(1)
-    set_angle(180) # Позиция 180 градусов
-    time.sleep(1)
+    # Поворот на 0, 90 и 180 градусов
+    set_angle(0)
+    time.sleep(2)
+    set_angle(90)
+    time.sleep(2)
+    set_angle(180)
+    time.sleep(2)
 finally:
-    pwm.stop()
-    GPIO.cleanup()
+    # Остановка и отключение
+    pi.set_servo_pulsewidth(servo_pin, 0)
+    pi.stop()
