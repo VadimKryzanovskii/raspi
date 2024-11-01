@@ -1,4 +1,4 @@
-import pigpio
+import pigpio #Включить в терминале демона командой  sudo pigpiod
 import time
 import evdev
 from evdev import InputDevice, categorize, ecodes
