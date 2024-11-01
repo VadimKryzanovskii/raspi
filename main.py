@@ -1,30 +1,54 @@
-import RPi.GPIO as GPIO
+#new code
+import pigpio
 import time
+import evdev
+from evdev import InputDevice, categorize, ecodes
 
-# Настройка GPIO
-GPIO.setmode(GPIO.BCM)
-servo_pin = 17
-GPIO.setup(servo_pin, GPIO.OUT)
+#Connect gamepad
+gamepad = InputDevice('/dev/input/event7')
 
-# Установка сигнала на выходе
-pwm = GPIO.PWM(servo_pin, 50)  # Частота 50 Гц для сервопривода
-pwm.start(0)  # Начальное значение
+print(f"Connect device name: {gamepad.name}")
 
-# Функция для поворота сервопривода
-def set_angle(angle):
-    duty = 2 + (angle / 18)  # Перевод угла в значение скважности (duty cycle)
-    pwm.ChangeDutyCycle(duty)
-    time.sleep(0.5)
-    pwm.ChangeDutyCycle(0)  # Остановим сигнал для предотвращения шума
+# Подключение к pigpio
+pi = pigpio.pi()
 
-# Пример использования
+# Настройка GPIO для PWM
+servo_pin1 = 17
+
+def set_angle1(angle1):
+    # Преобразование угла в значение широты импульса (500–2500 микросекунд)
+    pulsewidth = 500 + (angle1 / 180) * 2000
+    pi.set_servo_pulsewidth(servo_pin1, pulsewidth)
+set_angle1(90)
+angle1 = 90
 try:
-    set_angle(0)   # Позиция 0 градусов
-    time.sleep(1)
-    set_angle(90)  # Позиция 90 градусов
-    time.sleep(1)
-    set_angle(180) # Позиция 180 градусов
-    time.sleep(1)
+    
+    for event in gamepad.read_loop():
+        if event.type == ecodes.EV_ABS:
+            absevent = categorize(event)
+            if event.code == ecodes.ABS_X:  # Событие оси X левого стика
+                print(f'Левый стик (ось X): {event.value}')
+                
+                if event.value >= 40000:
+                    if angle1 < 130:
+                        angle1+=1
+                    else:
+                        angle1 = 130
+                if event.value <= 30000:
+                    if angle1 > 20:
+                        angle1-=1
+                    else:
+                        angle1 = 20
+                
+                #angle = event.value//(65535/180)
+                #time.sleep()
+                print(angle1)
+                time.sleep(0.01)
+                set_angle1(angle1)
+            
+
+        
 finally:
-    pwm.stop()
-    GPIO.cleanup()
+    # Остановка и отключение
+    pi.set_servo_pulsewidth(servo_pin1, 0)
+    pi.stop()
