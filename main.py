@@ -1,30 +1,81 @@
-import RPi.GPIO as GPIO
+import pigpio
 import time
+import evdev
+from evdev import InputDevice, categorize, ecodes
 
-# Настройка GPIO
-GPIO.setmode(GPIO.BCM)
-servo_pin = 17
-GPIO.setup(servo_pin, GPIO.OUT)
+# Connect gamepad
+gamepad = InputDevice("/dev/input/event7")
 
-# Установка сигнала на выходе
-pwm = GPIO.PWM(servo_pin, 50)  # Частота 50 Гц для сервопривода
-pwm.start(0)  # Начальное значение
+print(f"Connect device name: {gamepad.name}")
 
-# Функция для поворота сервопривода
-def set_angle(angle):
-    duty = 2 + (angle / 18)  # Перевод угла в значение скважности (duty cycle)
-    pwm.ChangeDutyCycle(duty)
-    time.sleep(0.5)
-    pwm.ChangeDutyCycle(0)  # Остановим сигнал для предотвращения шума
+# Подключение к pigpio
+pi = pigpio.pi()
 
-# Пример использования
+# Настройка GPIO для PWM
+SERVO_PIN1 = 17
+SERVO_PIN2 = 18
+# Начальная настройка угла сервопривода
+ANGLE_SERVO_LEFT = 90
+ANGLE_SERVO_RIGTH = 90
+
+
+def set_angle_servo_left(angle):
+    """Принимает угол левого стика контролера xbox и передает на сервопривод подключеный к RaspberryPi"""
+    # Преобразование угла в значение широты импульса (500–2500 микросекунд)
+    pulsewidth = 500 + (angle / 180) * 2000
+    pi.set_servo_pulsewidth(SERVO_PIN1, pulsewidth)
+
+
+def set_angle_servo_rigth(angle):
+    """Принимает угол правого стика контролера xbox и передает на сервопривод подключеный к RaspberryPi"""
+    # Преобразование угла в значение широты импульса (500–2500 микросекунд)
+    pulsewidth = 500 + (angle / 180) * 2000
+    pi.set_servo_pulsewidth(SERVO_PIN2, pulsewidth)
+
+
+set_angle_servo_left(ANGLE_SERVO_LEFT)
+set_angle_servo_rigth(ANGLE_SERVO_RIGTH)
+
+
 try:
-    set_angle(0)   # Позиция 0 градусов
-    time.sleep(1)
-    set_angle(90)  # Позиция 90 градусов
-    time.sleep(1)
-    set_angle(180) # Позиция 180 градусов
-    time.sleep(1)
+
+    for event in gamepad.read_loop():
+        if event.type == ecodes.EV_ABS:
+            absevent = categorize(event)
+            if event.code == ecodes.ABS_X:  # Событие оси X левого стика
+                print(f"Левый стик (ось X): {event.value}")
+
+                if event.value >= 40000:
+                    if ANGLE_SERVO_LEFT < 130:
+                        ANGLE_SERVO_LEFT += 1
+                    else:
+                        ANGLE_SERVO_LEFT = 130
+                if event.value <= 30000:
+                    if ANGLE_SERVO_LEFT > 20:
+                        ANGLE_SERVO_LEFT -= 1
+                    else:
+                        ANGLE_SERVO_LEFT = 20
+            elif event.code == ecodes.ABS_Z:  # Событие оси X правого стика
+                print(f"Правый стик (ось X): {event.value}")
+                if event.value >= 40000:
+                    if ANGLE_SERVO_RIGTH < 130:
+                        ANGLE_SERVO_RIGTH += 1
+                    else:
+                        ANGLE_SERVO_RIGTH = 130
+                if event.value <= 30000:
+                    if ANGLE_SERVO_RIGTH > 20:
+                        ANGLE_SERVO_RIGTH -= 1
+                    else:
+                        ANGLE_SERVO_RIGTH = 20
+                # angle = event.value//(65535/180)
+                # time.sleep()
+            print(ANGLE_SERVO_LEFT)
+            time.sleep(0.01)
+            set_angle_servo_left(ANGLE_SERVO_LEFT)
+
+
 finally:
-    pwm.stop()
-    GPIO.cleanup()
+    # Остановка и отключение
+    pi.set_servo_pulsewidth(SERVO_PIN1, 0)
+    pi.stop()
+
