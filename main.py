@@ -58,10 +58,10 @@ try:
             elif event.code == ecodes.ABS_Z:  # Событие оси X правого стика
                 print(f"Правый стик (ось X): {event.value}")
                 if event.value >= 40000:
-                    if ANGLE_SERVO_RIGTH < 130:
+                    if ANGLE_SERVO_RIGTH < 120:
                         ANGLE_SERVO_RIGTH += 1
                     else:
-                        ANGLE_SERVO_RIGTH = 130
+                        ANGLE_SERVO_RIGTH = 120
                 if event.value <= 30000:
                     if ANGLE_SERVO_RIGTH > 20:
                         ANGLE_SERVO_RIGTH -= 1
@@ -70,8 +70,10 @@ try:
                 # angle = event.value//(65535/180)
                 # time.sleep()
             print(ANGLE_SERVO_LEFT)
-            time.sleep(0.01)
+            print(ANGLE_SERVO_RIGTH)
+            #time.sleep(0.01)
             set_angle_servo_left(ANGLE_SERVO_LEFT)
+            set_angle_servo_rigth(ANGLE_SERVO_RIGTH)
 
 
 finally:
