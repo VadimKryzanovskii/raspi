@@ -37,6 +37,17 @@ set_angle_servo_left(ANGLE_SERVO_LEFT)
 set_angle_servo_rigth(ANGLE_SERVO_RIGTH)
 
 
+button_map = {
+    ecodes.BTN_A: "A",
+    ecodes.BTN_B: "B",
+    ecodes.BTN_X: "X",
+    ecodes.BTN_Y: "Y",
+    ecodes.BTN_START: "START",
+    ecodes.BTN_SELECT: "SELECT",
+    ecodes.BTN_TL: "LB",
+    ecodes.BTN_TR: "RB",
+}
+
 try:
 
     for event in gamepad.read_loop():
@@ -67,6 +78,12 @@ try:
                         ANGLE_SERVO_RIGTH -= 1
                     else:
                         ANGLE_SERVO_RIGTH = 20
+            elif event.type == ecodes.EV_KEY:  # Кнопки
+                button = button_map.get(event.code, f"Кнопка {event.code}")
+                if event.value == 1:
+                    print(f"Нажата кнопка: {button}")
+                elif event.value == 0:
+                    print(f"Отпущена кнопка: {button}")
                 # angle = event.value//(65535/180)
                 # time.sleep()
             print(ANGLE_SERVO_LEFT)
